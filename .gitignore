@@ -1,2 +1,10 @@
 .idea/
 config/__pycache__/
+*.pyc
+.scrapy/httpcache/tianmao
+__pycache__
+.DS_Store
+*.rdb
+*.iml
+test.py
+
