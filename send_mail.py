@@ -4,6 +4,9 @@ from config.setting import *
 from email import encoders
 from email.header import Header
 from email.utils import parseaddr, formataddr
+from logger_setting import get_logger
+
+logger = get_logger()
 
 class SendMail(object):
 
@@ -22,6 +25,7 @@ class SendMail(object):
 
     def send_mail(self, content):
         # 构造发送内容
+        logger.info('开始发送邮件内容')
         msg = MIMEText(content, 'plain', 'utf-8')
         msg['From'] = self._format_addr('火柴菌 <%s>' % self.from_addr)
         msg['To'] = self._format_addr('我的邮件 <%s>' % self.to_addr)
@@ -34,8 +38,9 @@ class SendMail(object):
             server.login(self.from_addr, self.password)
             server.sendmail(self.from_addr, self.to_addr, msg.as_string())
             server.quit()
+            logger.info('发送成功')
         except Exception as e:
-            print (e)
+            logger.info("邮件发送失败,失败原因：{}".format(e))
 
 if __name__ == "__main__":
     s = SendMail()
