@@ -18,7 +18,7 @@ class RunReadfree(object):
         self.main_url = 'http://readfree.me/'
         self.login_url = 'http://readfree.me/accounts/profile/weasny/wish/'
 
-    def get_contemt(self, retry=RETRY_TIMES):
+    def get_content(self, retry=RETRY_TIMES):
         logger.info('开始爬取签到内容')
         # 查看建表信息，没有则新建表
         if Readfree.table_exists() == False:
@@ -98,15 +98,22 @@ class RunReadfree(object):
         # 判断数据库里是否有当天的签到数据,没有则签到
         while True:
             today = datetime.date.today()
-            r = Readfree.select().where(Readfree.checkin_day == today).count()
-            if r > 0:
-                logger.info('今天已签到.')
-            else:
-                # 没签到，进行签到
-                self.get_contemt()
+            try:
+                r = Readfree.select().where(Readfree.checkin_day == today).count()
+                if r > 0:
+                    logger.info('今天已签到.')
+                else:
+                    # 没签到，进行签到
+                    self.get_content()
+            except Exception as e:
+                logger.error('error message:{}'.format(e))
+                logger.info('select from databases failed.')
             # 每隔半小时检查一遍
             time.sleep(1800)
 
 if __name__ == "__main__":
+    # 查看建表信息，没有则新建表
+    if Readfree.table_exists() == False:
+        Readfree.create_table()
     rr = RunReadfree()
     rr.run()
