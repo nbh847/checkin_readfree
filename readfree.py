@@ -5,7 +5,7 @@ from bs4 import BeautifulSoup
 from logger_setting import get_logger
 import time
 import datetime
-from config.items import Readfree
+from config.items import Readfree, db
 
 logger = get_logger()
 
@@ -45,13 +45,13 @@ class RunReadfree(object):
 
         # 获取剩余积分内容
         try:
-            msg = soup.find('div', id='container').find_all('p')[2]
-            points = msg.get_text().split('剩余积分:')[1].split(',')[0]
+            msg = soup.find('div', id='container').find_all('p')[1]
+            points = msg.get_text().split(':')[2].split(',')[0].strip()
         except Exception as e:
             if retry < 1:
                 logger.info('重试次数达到{}次，退出爬虫'.format(str(RETRY_TIMES)))
                 return
-            logger.error('错误详情：{}'.format(e))
+            logger.exception('错误详情：{}'.format(e))
             logger.info('获取剩余积分内容失败,15s后继续尝试.')
             time.sleep(15)
             return self.get_content(retry=retry - 1)
@@ -95,7 +95,7 @@ class RunReadfree(object):
             time.sleep(15)
             return self.checkin(retry=retry - 1)
 
-    def run(self):
+    def run(self, retry=RETRY_TIMES):
         # 判断数据库里是否有当天的签到数据,没有则签到
         while True:
             today = datetime.date.today()
@@ -107,15 +107,23 @@ class RunReadfree(object):
                     # 没签到，进行签到
                     self.get_content()
             except Exception as e:
-                logger.error('error message:{}'.format(e))
-                logger.info('select from databases failed.')
+                if str(e.args[0]) == '2013' or str(e.args[0]) == '2006' or str(e.args[0]) == '0':
+                    if retry < 1:
+                        logger.info('数据库重连次数到达{}次，退出。'.format(retry))
+                        return
+                    logger.exception('错误详情：{}'.format(e))
+                    logger.warning('mysql连接断开，再次请求。')
+                    db.close()
+                    db.get_conn().ping(True)
+                    return self.run(retry=retry - 1)
+                else:
+                    logger.exception('error message:{}'.format(e))
+                    logger.info('select from databases failed.')
+
             # 每隔半小时检查一遍
             time.sleep(1800)
 
 
 if __name__ == "__main__":
-    # 查看建表信息，没有则新建表
-    if Readfree.table_exists() == False:
-        Readfree.create_table()
     rr = RunReadfree()
     rr.run()
