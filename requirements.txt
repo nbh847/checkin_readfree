@@ -5,7 +5,7 @@ gevent==1.2.2
 greenlet==0.4.12
 itsdangerous==0.24
 Jinja2==2.10
-lxml==4.1.0
+lxml==4.9.1
 peewee==2.10.2
 peewee-migrate==0.14.0
 PyMySQL==0.7.11
